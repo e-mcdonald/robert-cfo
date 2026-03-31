@@ -35,6 +35,19 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', ...counts })
 })
 
+// Serve built client (for screenshot / production)
+import { existsSync } from 'fs'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const distPath = join(__dirname, '../client/dist')
+if (existsSync(distPath)) {
+  app.use(express.static(distPath))
+  app.get('*', (req, res) => {
+    res.sendFile(join(distPath, 'index.html'))
+  })
+}
+
 app.listen(PORT, () => {
   console.log(`Finance Dashboard server running on http://localhost:${PORT}`)
 })
