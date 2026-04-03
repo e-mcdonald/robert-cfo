@@ -1,5 +1,5 @@
 import https from 'https'
-import { readFileSync, existsSync } from 'fs'
+import { readFileSync } from 'fs'
 import { getDb } from '../db/client.js'
 import { decrypt } from './encrypt.js'
 
@@ -9,13 +9,15 @@ const TELLER_ENV = process.env.TELLER_ENV || 'sandbox'
 function getMTLSAgent() {
   const certPath = process.env.TELLER_CERT_PATH
   const keyPath = process.env.TELLER_KEY_PATH
-  if (certPath && keyPath && existsSync(certPath) && existsSync(keyPath)) {
+  if (!certPath || !keyPath) return null
+  try {
     return new https.Agent({
       cert: readFileSync(certPath),
       key: readFileSync(keyPath),
     })
+  } catch {
+    return null
   }
-  return null
 }
 
 async function tellerRequest(path, accessToken) {

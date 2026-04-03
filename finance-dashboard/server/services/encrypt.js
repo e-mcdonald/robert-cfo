@@ -8,11 +8,9 @@ const TAG_LENGTH = 16
 function getKey() {
   const keyHex = process.env.ENCRYPTION_KEY
   if (!keyHex || keyHex.length < 64) {
-    // Generate an ephemeral key for the session if none is set
-    if (!globalThis._ephemeralKey) {
-      globalThis._ephemeralKey = randomBytes(KEY_LENGTH)
-    }
-    return globalThis._ephemeralKey
+    throw new Error(
+      'ENCRYPTION_KEY is not set or invalid. Run `npm run generate-key` and add it to your .env file.'
+    )
   }
   return Buffer.from(keyHex, 'hex').slice(0, KEY_LENGTH)
 }

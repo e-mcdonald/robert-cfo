@@ -16,32 +16,19 @@ async function snapshotNetWorth() {
   const db = getDb()
   const accounts = db.prepare('SELECT * FROM accounts WHERE is_active = 1').all()
 
-  let checking = 0, savings = 0, crypto = 0, investments = 0, retirement = 0, credit = 0
-
+  const breakdown = {}
   for (const acc of accounts) {
-    switch (acc.type) {
-      case 'checking': checking += acc.balance; break
-      case 'savings': savings += acc.balance; break
-      case 'crypto': crypto += acc.balance; break
-      case 'investment': investments += acc.balance; break
-      case 'retirement': retirement += acc.balance; break
-      case 'credit': credit += acc.balance; break
-    }
+    breakdown[acc.type] = (breakdown[acc.type] || 0) + acc.balance
   }
 
-  const totalAssets = checking + savings + crypto + investments + retirement + Math.max(0, credit)
-  const totalLiabilities = Math.abs(Math.min(0, credit))
+  const totalLiabilities = Object.values(breakdown).reduce((sum, v) => sum + (v < 0 ? Math.abs(v) : 0), 0)
+  const totalAssets = Object.values(breakdown).reduce((sum, v) => sum + (v > 0 ? v : 0), 0)
   const netWorth = totalAssets - totalLiabilities
 
   db.prepare(`
     INSERT INTO net_worth_snaps (total_assets, total_liabilities, net_worth, breakdown_json)
     VALUES (?, ?, ?, ?)
-  `).run(
-    totalAssets,
-    totalLiabilities,
-    netWorth,
-    JSON.stringify({ checking, savings, crypto, investments, retirement, credit })
-  )
+  `).run(totalAssets, totalLiabilities, netWorth, JSON.stringify(breakdown))
 
   return { totalAssets, totalLiabilities, netWorth }
 }
@@ -63,7 +50,6 @@ export async function syncAll() {
     }
   }
 
-  // Categorize after all syncs
   try {
     const catResult = await categorizeUncategorized()
     results.push({ source: 'categorize', ...catResult })
@@ -71,7 +57,6 @@ export async function syncAll() {
     results.push({ source: 'categorize', error: err.message })
   }
 
-  // Snapshot net worth
   const nwSnap = await snapshotNetWorth()
   results.push({ source: 'networth', ...nwSnap })
 

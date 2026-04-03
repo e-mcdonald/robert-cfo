@@ -10,6 +10,9 @@ router.get('/', (req, res) => {
     page = 1, limit = 50,
   } = req.query
 
+  const pageNum = Math.max(1, parseInt(page) || 1)
+  const limitNum = Math.min(Math.max(1, parseInt(limit) || 50), 500)
+
   let where = []
   let params = []
 
@@ -21,14 +24,14 @@ router.get('/', (req, res) => {
   if (search) { where.push('(description LIKE ? OR merchant LIKE ?)'); params.push(`%${search}%`, `%${search}%`) }
 
   const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : ''
-  const offset = (parseInt(page) - 1) * parseInt(limit)
+  const offset = (pageNum - 1) * limitNum
 
   const total = db.prepare(`SELECT COUNT(*) as count FROM transactions ${whereClause}`).get(...params).count
   const transactions = db.prepare(
     `SELECT * FROM transactions ${whereClause} ORDER BY date DESC, created_at DESC LIMIT ? OFFSET ?`
-  ).all(...params, parseInt(limit), offset)
+  ).all(...params, limitNum, offset)
 
-  res.json({ transactions, total, page: parseInt(page), limit: parseInt(limit) })
+  res.json({ transactions, total, page: pageNum, limit: limitNum })
 })
 
 router.get('/summary', (req, res) => {
