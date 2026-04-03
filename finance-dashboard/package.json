@@ -1,0 +1,21 @@
+{
+  "name": "finance-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["client", "server"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\" \"npm run dev:python\"",
+    "dev:server": "cd server && node --watch index.js",
+    "dev:client": "cd client && vite",
+    "dev:python": "cd scripts/python-bridge && uvicorn main:app --reload --port 8001",
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install && pip install -r scripts/python-bridge/requirements.txt",
+    "db:migrate": "cd server && node db/migrate.js",
+    "sync": "curl -X POST http://localhost:3001/api/sync/all",
+    "generate-key": "node scripts/generate-key.js",
+    "build": "cd client && vite build"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
